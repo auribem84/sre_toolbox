@@ -1,0 +1,31 @@
+# Define the user name and array of server names
+$userNameToDisconnect = "ADM-E0207779"  # Replace with the actual username you want to disconnect
+$servers = @("PRDADFS01.prod.local", "Server2", "Server3")  # Replace with your actual server names
+
+foreach ($server in $servers) {
+    Write-Host "Processing server: $server"
+    
+    # Get a list of all logged-on users on the server
+    $loggedOnUsers = quser /server:$server 2>&1
+
+    # Check if the quser command was successful or failed (e.g., server inaccessible)
+    if ($loggedOnUsers -like "*error*") {
+        Write-Host "Error: Could not retrieve user session info from $server. Skipping."
+        continue
+    }
+
+    # Loop through each logged-in user on the server
+    foreach ($user in $loggedOnUsers) {
+        $userInfo = $user -split '\s+'
+        
+        # Extract the username and session ID from the output
+        $currentUserName = $userInfo[0]
+        $sessionId = $userInfo[2]  # The session ID is typically in the 3rd column
+
+        # If the username matches the one we want to disconnect
+        if ($currentUserName -eq $userNameToDisconnect) {
+            Write-Host "Disconnecting user session for $userNameToDisconnect on server $server"
+            logoff $sessionId /server:$server
+        }
+    }
+}
