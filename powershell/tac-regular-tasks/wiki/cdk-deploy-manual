@@ -1,0 +1,7 @@
+1.- Clone repo
+    git clone <<URL>>
+
+2.- cdk list
+
+3.- Select the proper environment deployment and run
+    cdk deploy <<deployname>>
