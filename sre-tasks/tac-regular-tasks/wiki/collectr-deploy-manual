@@ -1,0 +1,7 @@
+Open jenkins. 
+
+Run Pipeline Devops-pcix-deploy
+
+Select run with parameter
+
+Introduce the environment (pcid, pciq, pcis, pcip) and specifify the version
