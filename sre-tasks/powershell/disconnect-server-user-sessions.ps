@@ -29,3 +29,98 @@ foreach ($server in $servers) {
         }
     }
 }
+
+
+
+
+
+
+# Define the list of servers (Server Array)
+$srvs = Get-ADComputer -Filter {OperatingSystem -Like "*Server*"} -Property Name, OperatingSystem | select DNSHostName
+$servers = $srvs | Select-Object -ExpandProperty DNSHostName 
+
+# The username of the user to be disconnected (Insert the username here)
+$userToDisconnect = "ADM-E0207779"
+
+# Function to list active sessions on the server
+function Get-ActiveSessions {
+    param (
+        [string]$server,
+        [PSCredential]$credentials
+    )
+    try {
+        # Run query command on the server to list active sessions
+        $sessions = Invoke-Command -ComputerName $server -Credential $credentials -ScriptBlock {
+            query user
+        } 2>&1
+        
+        # Check for any errors in the response
+        if ($sessions -like "*error*") {
+            Write-Host "Error querying sessions on $server: $sessions"
+        }
+        else {
+            $sessions -match '^\s*(\d+)\s+(\S+)\s+(\S+)\s*(\S+)\s*' | ForEach-Object {
+                $sessionInfo = $_ -replace '^\s+|\s+$', '' # Trim spaces
+                $fields = $sessionInfo -split '\s{2,}'
+                [PSCustomObject]@{
+                    SessionID = $fields[0]
+                    UserName  = $fields[1]
+                    SessionState = $fields[2]
+                    IdleTime = $fields[3]
+                }
+            }
+        }
+    } catch {
+        Write-Host "An error occurred while querying sessions on $server: $_"
+    }
+}
+
+# Function to disconnect a session from the server
+function Disconnect-UserSession {
+    param (
+        [string]$server,
+        [int]$sessionId,
+        [PSCredential]$credentials
+    )
+    try {
+        # Disconnect the user session
+        $result = Invoke-Command -ComputerName $server -Credential $credentials -ScriptBlock {
+            param ($sessionId)
+            logoff $sessionId
+        } -ArgumentList $sessionId 2>&1
+
+        if ($result -match "successfully logged off") {
+            Write-Host "User with Session ID $sessionId has been disconnected from $server."
+        } else {
+            Write-Host "Failed to disconnect session ID $sessionId from $server. Error: $result"
+        }
+    } catch {
+        Write-Host "An error occurred while disconnecting the session on $server: $_"
+    }
+}
+
+# Prompt for credentials to use across all servers (This happens only once)
+$credentials = Get-Credential
+
+# Main Script
+foreach ($server in $servers) {
+    Write-Host "Checking active sessions on $server..."
+
+    $sessions = Get-ActiveSessions -server $server -credentials $credentials
+
+    if ($sessions) {
+        Write-Host "Active sessions on $server:"
+        $sessions | Format-Table -AutoSize
+
+        # Find the session that belongs to the user that needs to be disconnected
+        $sessionToDisconnect = $sessions | Where-Object { $_.UserName -eq $userToDisconnect }
+
+        if ($sessionToDisconnect) {
+            Disconnect-UserSession -server $server -sessionId $sessionToDisconnect.SessionID -credentials $credentials
+        } else {
+            Write-Host "No active session found for user '$userToDisconnect' on $server."
+        }
+    } else {
+        Write-Host "No active sessions found or error querying sessions on $server."
+    }
+}
