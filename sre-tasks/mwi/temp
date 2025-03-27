@@ -1,0 +1,218 @@
+module "PaymentPortal_roles" {
+  source = "../modules/trueaccord_role"
+
+  team_name    = "PaymentPortal"
+  instance_arn = var.instance_arn
+  sso_group_id = var.sso_groups["PaymentPortal"]
+  policy_names = var.policy_names
+
+  inline_policies = {
+    lambda_access = {
+      policy_name = "PaymentsEngLambdaAccess"
+      statements = [
+        {
+          Effect = "Allow"
+          Action = [
+            "lambda:GetFunction",
+            "lambda:GetFunctionConfiguration",
+            "lambda:InvokeAsync",
+            "lambda:InvokeFunction",
+            "lambda:PublishVersion",
+            "lambda:PutFunctionConcurrency",
+            "lambda:PutFunctionEventInvokeConfig",
+            "lambda:PutProvisionedConcurrencyConfig",
+            "lambda:UpdateEventSourceMapping",
+            "lambda:UpdateFunctionConfiguration",
+            "lambda:UpdateFunctionEventInvokeConfig"
+          ]
+          Resource = ["*"]
+          Condition = {
+            StringEquals = {
+              "aws:ResourceTag/EngBusinessUnit" = ["data_payments"]
+            }
+          }
+        }
+      ]
+    },
+
+    secrets_manager = {
+      policy_name = "PaymentsEngSecretsAccess"
+      statements = [
+        {
+          Effect = "Allow"
+          Action = [
+            "secretsmanager:Create*",
+            "secretsmanager:Get*",
+            "secretsmanager:Put*",
+            "secretsmanager:Update*",
+            "secretsmanager:Delete*",
+            "secretsmanager:DescribeSecret",
+            "secretsmanager:TagResource",
+            "secretsmanager:RotateSecret",
+            "secretsmanager:RestoreSecret",
+            "secretsmanager:UpdateSecretVersionStage"
+          ]
+          Resource = ["arn:aws:secretsmanager:*:${var.accounts["TrueAccord"].id}:secret:payments/*"]
+        }
+      ]
+    },
+
+    dynamodb_access = {
+      policy_name = "PaymentsEngDynamoDBAccess"
+      statements = [
+        {
+          Effect = "Allow"
+          Action = [
+            "dynamodb:Batch*",
+            "dynamodb:Delete*",
+            "dynamodb:Describe*",
+            "dynamodb:Get*",
+            "dynamodb:List*",
+            "dynamodb:Put*",
+            "dynamodb:Update*",
+            "dynamodb:CreateBackup",
+            "dynamodb:RestoreTableFromBackup",
+            "dynamodb:EnableKinesisStreamingDestination",
+            "dynamodb:DisableKinesisStreamingDestination",
+            "dynamodb:CreateTable",
+            "dynamodb:DeleteTable",
+            "dynamodb:TagResource",
+            "dynamodb:UntagResource"
+          ]
+          Resource = ["arn:aws:dynamodb:us-west-2:${var.accounts["TrueAccord"].id}:table/mercury*"]
+        }
+      ]
+    },
+
+    sqs_access = {
+      policy_name = "PaymentsEngSQSAccess"
+      statements = [
+        {
+          Effect = "Allow"
+          Action = [
+            "sqs:ChangeMessageVisibility",
+            "sqs:Delete*",
+            "sqs:Send*",
+            "sqs:GetQueueAttributes",
+            "sqs:GetQueueUrl",
+            "sqs:PurgeQueue",
+            "sqs:ReceiveMessage",
+            "sqs:SetQueueAttributes",
+            "sqs:StartMessageMoveTask",
+            "sqs:ListMessageMoveTasks",
+            "sqs:CancelMessageMoveTask",
+            "sqs:TagQueue",
+            "sqs:UntagQueue"
+          ]
+          Resource = ["arn:aws:sqs:*:${var.accounts["TrueAccord"].id}:mercury*"]
+        }
+      ]
+    },
+
+    s3_access = {
+      policy_name = "PaymentsEngS3Access"
+      statements = [
+        {
+          Effect = "Allow"
+          Action = [
+            "s3:Delete*",
+            "s3:Get*",
+            "s3:List*",
+            "s3:Put*",
+            "s3:RestoreObject"
+          ]
+          Resource = ["*"]
+          Condition = {
+            StringEquals = {
+              "aws:ResourceTag/EngBusinessUnit" = ["data_payments"]
+            }
+          }
+        }
+      ]
+    },
+
+    pipeline_access = {
+      policy_name = "PaymentsEngPipelineAccess"
+      statements = [
+        {
+          Effect = "Allow"
+          Action = [
+            "codepipeline:CreatePipeline",
+            "codepipeline:DeletePipeline",
+            "codepipeline:DisableStageTransition",
+            "codepipeline:EnableStageTransition",
+            "codepipeline:GetActionType",
+            "codepipeline:GetJobDetails",
+            "codepipeline:GetPipeline",
+            "codepipeline:GetPipelineExecution",
+            "codepipeline:GetPipelineState",
+            "codepipeline:GetThirdPartyJobDetails",
+            "codepipeline:ListActionExecutions",
+            "codepipeline:ListActionTypes",
+            "codepipeline:ListPipelineExecutions",
+            "codepipeline:ListPipelines",
+            "codepipeline:ListTagsForResource",
+            "codepipeline:ListWebhooks",
+            "codepipeline:PutApprovalResult",
+            "codepipeline:PutWebhook",
+            "codepipeline:RetryStageExecution",
+            "codepipeline:StartPipelineExecution",
+            "codepipeline:StopPipelineExecution",
+            "codepipeline:TagResource",
+            "codepipeline:UntagResource",
+            "codepipeline:UpdatePipeline"
+          ]
+          Resource = ["*"]
+          Condition = {
+            StringEquals = {
+              "aws:ResourceTag/EngBusinessUnit" = ["data_payments"]
+            }
+          }
+        }
+      ]
+    },
+
+    autoscaling_access = {
+      policy_name = "PaymentsEngAutoscalingAccess"
+      statements = [
+        {
+          Effect = "Allow"
+          Action = [
+            "application-autoscaling:*",
+            "autoscaling-plans:*"
+          ]
+          Resource = ["*"]
+        }
+      ]
+    },
+
+    pii_restrictions = {
+      policy_name = "PaymentsEngPIIRestrictions"
+      statements = [
+        {
+          Effect = "Allow"
+          Action = ["*"]
+          Resource = [
+            "arn:aws:dynamodb:us-west-2:${var.accounts["TrueAccord"].id}:table/mercury-pcip*"
+          ]
+          Condition = {
+            "ForAllValues:StringNotLike" = {
+              "dynamodb:Attributes" = ["pii_*"]
+            }
+            StringEquals = {
+              "dynamodb:ReturnValues" = ["NONE"]
+            }
+          }
+        },
+        {
+          Effect = "Deny"
+          Action = ["*"]
+          Resource = [
+            "arn:aws:dynamodb:us-west-2:${var.accounts["TrueAccord"].id}:table/mercury-pcip*-vault",
+            "arn:aws:secretsmanager:*:${var.accounts["TrueAccord"].id}:secret:payments/mercury-pcip*"
+          ]
+        }
+      ]
+    }
+  }
+}

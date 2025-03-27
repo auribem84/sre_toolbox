@@ -1,0 +1,12 @@
+UAT environment
+    UATAAPP41.uat.local
+    UATAAPP45.uat.local
+
+Download the binaries 
+Upload binaries zip files into each one of the servers (using FileZilla)
+Create a backup of the current service
+    cp -R /app/ERC_TACInbound/ERC_TACInboundAuth/ERC_TACInboundAuth-binaries/ /app/ERC_TACInbound/ERC_TACInboundAuth/ERC_TACInboundAuth-service/ 20240322/
+    cp -R /app/ERC_TACInbound/ERC_TACInboundInbound/ERC_TACInboundInbound-binaries/ /app/ERC_TACInbound/ERC_TACInboundInbound/ERC_TACInboundInbound-service/ /etc/config/erc/microservices/erctacintegrationapiinbound/ 20250325/
+
+
+    unzip /app/deploys/20250325/ERC.TACIntegrationAPI.Inbound.zip -d .
