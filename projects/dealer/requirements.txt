@@ -1,1 +1,12 @@
+
+I'm starting a progressive web app called CarTrackr, for car dealers. The goal is to allow user to manage and track car acquisition, repair and sell process. convert it to a project brief statement.
+
+make it more concise
+
+
+
+
+MODULE: CAR REGISTRATION
+Introduce 
+
 Create a mobile application to manage a car dealer. 
