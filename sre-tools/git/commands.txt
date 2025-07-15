@@ -1,0 +1,8 @@
+
+git clone git@github.com-auribem84:auribem84/sre_toolbox.git
+
+git add .
+
+git commit -m "initial deploy"
+
+git push origin
